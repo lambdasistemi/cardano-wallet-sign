@@ -1,0 +1,86 @@
+cabal-version: 3.4
+name:          cardano-wallet-sign
+version:       0.1.0.0
+synopsis:      Cardano BIP39 wallet derivation and transaction signing
+description:
+  Derive Ed25519 signing keys from BIP39 mnemonics via
+  CIP-1852 (BIP32-Ed25519) and sign Conway-era Cardano
+  transactions offline. Includes wallet file management
+  with optional AES-256-CTR encryption.
+
+license:       Apache-2.0
+license-file:  LICENSE
+author:        Paolo Veronelli
+maintainer:    paolo.veronelli@gmail.com
+category:      Cardano
+build-type:    Simple
+
+common warnings
+  ghc-options:
+    -Wall -Werror -Wunused-imports -Wunused-packages
+    -Wmissing-export-lists -Wname-shadowing -Wredundant-constraints
+
+  default-extensions:
+    DataKinds
+    DerivingStrategies
+    DuplicateRecordFields
+    ImportQualifiedPost
+    OverloadedStrings
+    ScopedTypeVariables
+    StrictData
+    TypeApplications
+
+library
+  import:           warnings
+  hs-source-dirs:   lib
+  default-language: GHC2021
+  exposed-modules:
+    Cardano.Wallet.CLI
+    Cardano.Wallet.Derivation
+    Cardano.Wallet.Sign
+    Cardano.Wallet.Types
+
+  build-depends:
+    , aeson
+    , base
+    , base16-bytestring
+    , bytestring
+    , cardano-addresses
+    , cardano-crypto
+    , cardano-crypto-class
+    , cardano-ledger-api
+    , cardano-ledger-binary
+    , cardano-ledger-core
+    , containers
+    , lens
+    , opt-env-conf
+    , text
+
+executable cardano-wallet-sign
+  import:           warnings
+  hs-source-dirs:   exe
+  main-is:          Main.hs
+  default-language: GHC2021
+  other-modules:    Paths_cardano_wallet_sign
+  autogen-modules:  Paths_cardano_wallet_sign
+  build-depends:
+    , base
+    , cardano-wallet-sign
+    , opt-env-conf
+    , text
+
+  ghc-options:      -threaded
+
+test-suite unit-tests
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Main.hs
+  default-language: GHC2021
+  build-depends:
+    , base
+    , cardano-wallet-sign
+    , containers
+    , hspec
+    , opt-env-conf
+    , text
