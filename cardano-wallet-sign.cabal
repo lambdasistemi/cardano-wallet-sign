@@ -6,7 +6,7 @@ description:
   Derive Ed25519 signing keys from BIP39 mnemonics via
   CIP-1852 (BIP32-Ed25519) and sign Conway-era Cardano
   transactions offline. Includes wallet file management
-  with optional AES-256-CTR encryption.
+  with optional AES-256-GCM encryption.
 
 license:       Apache-2.0
 license-file:  LICENSE
@@ -37,6 +37,7 @@ library
   exposed-modules:
     Cardano.Wallet.CLI
     Cardano.Wallet.Derivation
+    Cardano.Wallet.Encrypt
     Cardano.Wallet.Sign
     Cardano.Wallet.Types
 
@@ -52,7 +53,9 @@ library
     , cardano-ledger-binary
     , cardano-ledger-core
     , containers
+    , crypton
     , lens
+    , memory
     , opt-env-conf
     , text
 
@@ -64,9 +67,7 @@ executable cardano-wallet-sign
   other-modules:    Paths_cardano_wallet_sign
   autogen-modules:  Paths_cardano_wallet_sign
   build-depends:
-    , aeson
     , base
-    , bytestring
     , cardano-wallet-sign
     , opt-env-conf
     , text
