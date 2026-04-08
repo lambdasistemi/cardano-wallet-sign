@@ -64,7 +64,9 @@ executable cardano-wallet-sign
   other-modules:    Paths_cardano_wallet_sign
   autogen-modules:  Paths_cardano_wallet_sign
   build-depends:
+    , aeson
     , base
+    , bytestring
     , cardano-wallet-sign
     , opt-env-conf
     , text

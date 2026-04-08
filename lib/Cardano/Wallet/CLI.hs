@@ -31,7 +31,8 @@ import OptEnvConf (
 
 -- | CLI commands.
 data Command
-    = Info FilePath
+    = Generate FilePath
+    | Info FilePath
     | Sign FilePath Text
     deriving stock (Show, Eq)
 
@@ -40,6 +41,10 @@ commandParser :: Parser Command
 commandParser =
     commands
         [ command
+            "generate"
+            "Generate a new wallet"
+            $ Generate <$> outputFileOption
+        , command
             "info"
             "Show wallet address and owner"
             $ Info <$> walletFileOption
@@ -59,6 +64,17 @@ walletFileOption =
         , metavar "FILEPATH"
         , long "wallet"
         , short 'w'
+        , reader str
+        , option
+        ]
+
+outputFileOption :: Parser FilePath
+outputFileOption =
+    setting
+        [ help "Path to write wallet JSON file"
+        , metavar "FILEPATH"
+        , long "output"
+        , short 'o'
         , reader str
         , option
         ]
