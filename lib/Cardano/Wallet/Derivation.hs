@@ -11,6 +11,9 @@ module Cardano.Wallet.Derivation (
     -- * Wallet derivation
     walletFromMnemonic,
     WalletError (..),
+
+    -- * Mnemonic generation
+    generateMnemonic,
 ) where
 
 import Cardano.Address (bech32)
@@ -36,6 +39,9 @@ import Cardano.Crypto.Wallet (XPrv)
 import Cardano.Crypto.Wallet qualified as HD
 import Cardano.Mnemonic (
     MkSomeMnemonic (mkSomeMnemonic),
+    entropyToMnemonic,
+    genEntropy,
+    mnemonicToText,
  )
 import Cardano.Wallet.Sign (signTx)
 import Cardano.Wallet.Types (
@@ -114,3 +120,9 @@ deriveKeyPair mnemonicText = do
                 minBound
         addrXPub = HD.toXPub <$> addrXPrv
     pure (addrXPrv, addrXPub)
+
+-- | Generate a fresh 15-word BIP39 mnemonic.
+generateMnemonic :: IO Text
+generateMnemonic = do
+    ent <- genEntropy @160
+    pure $ T.unwords $ mnemonicToText $ entropyToMnemonic ent
