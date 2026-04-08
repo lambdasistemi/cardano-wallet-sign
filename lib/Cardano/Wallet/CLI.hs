@@ -7,12 +7,17 @@ module Cardano.Wallet.CLI (
     Command (..),
     commandParser,
     loadWallet,
+    promptPassphrase,
 ) where
 
 import Cardano.Wallet.Derivation (walletFromMnemonic)
+import Cardano.Wallet.Encrypt (
+    WalletFile (..),
+    decryptMnemonic,
+    readWalletFile,
+ )
 import Cardano.Wallet.Types (Wallet)
-import Data.Aeson qualified as Aeson
-import Data.ByteString.Lazy qualified as BL
+import Data.ByteString.Char8 qualified as BS
 import Data.Text (Text)
 import OptEnvConf (
     Parser,
@@ -28,12 +33,21 @@ import OptEnvConf (
     short,
     str,
  )
+import System.IO (
+    hFlush,
+    hGetEcho,
+    hSetEcho,
+    stdin,
+    stdout,
+ )
 
 -- | CLI commands.
 data Command
     = Generate FilePath
     | Info FilePath
     | Sign FilePath Text
+    | Encrypt FilePath
+    | Decrypt FilePath
     deriving stock (Show, Eq)
 
 -- | Top-level command parser.
@@ -54,6 +68,14 @@ commandParser =
             $ Sign
                 <$> walletFileOption
                 <*> txHexOption
+        , command
+            "encrypt"
+            "Encrypt a wallet file"
+            $ Encrypt <$> walletFileOption
+        , command
+            "decrypt"
+            "Decrypt a wallet file"
+            $ Decrypt <$> walletFileOption
         ]
 
 walletFileOption :: Parser FilePath
@@ -90,25 +112,38 @@ txHexOption =
         , option
         ]
 
--- | Load a wallet from a JSON file.
+{- | Load a wallet from a JSON file.
+
+Detects encrypted wallets and prompts for
+passphrase when needed.
+-}
 loadWallet :: FilePath -> IO Wallet
 loadWallet path = do
-    bs <- BL.readFile path
-    case Aeson.decode bs of
-        Nothing ->
-            fail $
-                "Cannot parse wallet: " <> path
-        Just (WalletFile m) ->
-            case walletFromMnemonic m of
+    wf <- readWalletFile path
+    mnemonic <- case wf of
+        Plaintext m -> pure m
+        Encrypted{} -> do
+            pass <- promptPassphrase "Passphrase: "
+            case decryptMnemonic pass wf of
                 Left err ->
                     fail $
-                        "Derivation error: "
+                        "Decryption error: "
                             <> show err
-                Right w -> pure w
+                Right m -> pure m
+    case walletFromMnemonic mnemonic of
+        Left err ->
+            fail $
+                "Derivation error: " <> show err
+        Right w -> pure w
 
-newtype WalletFile = WalletFile Text
-
-instance Aeson.FromJSON WalletFile where
-    parseJSON =
-        Aeson.withObject "WalletFile" $ \o ->
-            WalletFile <$> o Aeson..: "mnemonics"
+-- | Prompt for a passphrase with echo disabled.
+promptPassphrase :: String -> IO BS.ByteString
+promptPassphrase prompt = do
+    putStr prompt
+    hFlush stdout
+    old <- hGetEcho stdin
+    hSetEcho stdin False
+    pass <- BS.getLine
+    hSetEcho stdin old
+    putStrLn ""
+    pure pass

@@ -26,6 +26,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Tutorial: tutorial.md
   - Usage: usage.md
   - Architecture: architecture.md
   - Development: development.md

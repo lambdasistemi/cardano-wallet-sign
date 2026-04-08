@@ -5,6 +5,12 @@ import Cardano.Wallet.CLI (
     commandParser,
  )
 import Cardano.Wallet.Derivation (walletFromMnemonic)
+import Cardano.Wallet.Encrypt (
+    EncryptError (..),
+    WalletFile (..),
+    decryptMnemonic,
+    encryptMnemonic,
+ )
 import Cardano.Wallet.Types (
     Address (..),
     Owner (..),
@@ -35,6 +41,7 @@ main :: IO ()
 main = hspec $ do
     derivationSpec
     parserSpec
+    encryptSpec
 
 derivationSpec :: Spec
 derivationSpec = describe "Wallet derivation" $ do
@@ -97,3 +104,29 @@ parserSpec = describe "CLI parser" $ do
                 ["info"]
                 [("CARDANO_WALLET_FILE", "/tmp/w.json")]
         cmd `shouldBe` Info "/tmp/w.json"
+
+    it "parses encrypt command" $ do
+        cmd <- parse ["encrypt", "-w", "w.json"] []
+        cmd `shouldBe` Encrypt "w.json"
+
+    it "parses decrypt command" $ do
+        cmd <- parse ["decrypt", "-w", "w.json"] []
+        cmd `shouldBe` Decrypt "w.json"
+
+encryptSpec :: Spec
+encryptSpec = describe "Wallet encryption" $ do
+    it "roundtrips encrypt/decrypt" $ do
+        encrypted <-
+            encryptMnemonic "test-pass" mnemonic
+        decryptMnemonic "test-pass" encrypted
+            `shouldBe` Right mnemonic
+
+    it "fails with wrong passphrase" $ do
+        encrypted <-
+            encryptMnemonic "correct" mnemonic
+        decryptMnemonic "wrong" encrypted
+            `shouldBe` Left AuthenticationFailed
+
+    it "decrypts plaintext without error" $ do
+        decryptMnemonic "anything" (Plaintext mnemonic)
+            `shouldBe` Right mnemonic
